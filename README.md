@@ -5,10 +5,24 @@
 
 #### 安装教程
 
-dotnet add package Configuration.EagerInit --version 1.0.0
+dotnet add package Configuration.EagerInit --version 1.0.1
 
 #### 使用说明
 
+TestService
+```
+    [EagerInit]
+    internal class TestService
+    {
+		
+		public TestService()
+		{
+			Console.WriteLine("Init...");
+		}
+	
+	}
+```
+Main
 
 ```
 using IHost host = Host.CreateDefaultBuilder()
@@ -19,3 +33,4 @@ using IHost host = Host.CreateDefaultBuilder()
         .Build();
         await host.RunAsync();
 ```
+

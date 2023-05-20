@@ -7,3 +7,5 @@
 /Configuration.EagerInit.Test/bin
 /Configuration.EagerInit.Test/obj
 /.vs
+/Configuration.EagerInit.WebAPITest/bin/
+/Configuration.EagerInit.WebAPITest/obj

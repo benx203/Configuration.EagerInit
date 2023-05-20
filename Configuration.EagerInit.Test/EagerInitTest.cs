@@ -21,7 +21,6 @@ namespace Configuration.EagerInit.Tests
             using IHost host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<TestService>();
                     services.UseEagerInit();
                 })
                 .Build();

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Zack.Commons;
 
 namespace Configuration.EagerInit
 {
@@ -14,22 +15,52 @@ namespace Configuration.EagerInit
     {
         public static IServiceCollection UseEagerInit(this IServiceCollection services)
         {
-            List<Type> eagerInitTypes = new List<Type>();
-            foreach (var service in services)
+            Dictionary<ServiceLifetime, List<Type>> dict = new Dictionary<ServiceLifetime, List<Type>>();
+            var assemblies = ReflectionHelper.GetAllReferencedAssemblies();
+            foreach (var assembly in assemblies)
             {
-                Type serviceType = service.ServiceType;
-                EagerInitAttribute? eagerInitAttribute = serviceType.GetCustomAttribute<EagerInitAttribute>();
-                if (eagerInitAttribute != null)
+                Type[] types = assembly.GetTypes();
+                foreach (var type in types)
                 {
-                    eagerInitTypes.Add(serviceType);
+                    if (type.IsAbstract)
+                    {
+                        continue;
+                    }
+                    var attribute = type.GetCustomAttribute<EagerInitAttribute>();
+                    if (attribute == null)
+                    {
+                        continue;
+                    }
+                    services.Add(new ServiceDescriptor(type, type, attribute.ServiceLifetime));
+                    dict.TryGetValue(attribute.ServiceLifetime, out var list);
+                    if (list == null)
+                    {
+                        list = new List<Type>();
+                        dict[attribute.ServiceLifetime] = list;
+                    }
+                    list.Add(type);
                 }
             }
 
-            services.AddSingleton<IHostedService>(serviceProvider =>
+            services.AddTransient<IHostedService>(serviceProvider =>
             {
-                foreach (var serviceType in eagerInitTypes)
+                IServiceScope serviceScope = serviceProvider.CreateScope();
+                foreach (var keyValuePair in dict)
                 {
-                    serviceProvider.GetService(serviceType);
+                    if (keyValuePair.Key == ServiceLifetime.Scoped)
+                    {
+                        foreach (var type in keyValuePair.Value)
+                        {
+                            serviceScope.ServiceProvider.GetService(type);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var type in keyValuePair.Value)
+                        {
+                            serviceProvider.GetService(type);
+                        }
+                    }
                 }
                 return new EagerInitService();
             });
